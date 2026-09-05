@@ -1,6 +1,9 @@
 from urllib.parse import urlparse
 
-import typer # type: ignore
+import typer
+
+from websec_audit.checks.headers import check_security_headers
+from websec_audit.http_client import FetchError, fetch_target
 
 
 app = typer.Typer(
@@ -36,10 +39,14 @@ def normalize_target(target: str) -> str:
     parsed = urlparse(target)
 
     if parsed.scheme not in {"http", "https"}:
-        raise typer.BadParameter("Target must use HTTP or HTTPS.")
+        raise typer.BadParameter(
+            "Target must use HTTP or HTTPS."
+        )
 
     if not parsed.netloc:
-        raise typer.BadParameter("Invalid target URL.")
+        raise typer.BadParameter(
+            "Invalid target URL."
+        )
 
     return target.rstrip("/")
 
@@ -62,7 +69,43 @@ def scan(
     typer.echo("--------------------")
     typer.echo(f"Target: {normalized_target}")
     typer.echo()
-    typer.echo("No security modules have been enabled yet.")
+
+    try:
+        response = fetch_target(normalized_target)
+
+    except FetchError as exc:
+        typer.echo(f"[ERROR] {exc}")
+        raise typer.Exit(code=1)
+
+    typer.echo(f"HTTP Status: {response.status_code}")
+    typer.echo(f"Final URL: {response.url}")
+    typer.echo()
+
+    findings = check_security_headers(response)
+
+    typer.echo("Security Header Analysis")
+    typer.echo("------------------------")
+
+    if not findings:
+        typer.echo("No missing security headers detected.")
+        return
+
+    for finding in findings:
+        typer.echo()
+        typer.echo(
+            f"[{finding.severity}] {finding.title}"
+        )
+        typer.echo(
+            f"  Description: {finding.description}"
+        )
+        typer.echo(
+            f"  Recommendation: {finding.recommendation}"
+        )
+
+    typer.echo()
+    typer.echo(
+        f"Total findings: {len(findings)}"
+    )
 
 
 if __name__ == "__main__":

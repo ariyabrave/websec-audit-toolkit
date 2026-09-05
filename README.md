@@ -9,9 +9,25 @@ Early development.
 ## Current Features
 
 - Command-line interface
-- URL normalization
 - HTTP/HTTPS target validation
-- Unit tests
+- URL normalization
+- HTTP response retrieval
+- Redirect handling
+- Request timeout and connection error handling
+- HTTP security header analysis
+- Structured security findings
+- Automated unit tests
+
+### Security Headers
+
+The toolkit currently checks for:
+
+- Content-Security-Policy
+- Strict-Transport-Security
+- X-Content-Type-Options
+- Referrer-Policy
+- Permissions-Policy
+
 
 ## Purpose
 
