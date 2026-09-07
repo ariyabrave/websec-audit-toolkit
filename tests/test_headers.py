@@ -77,3 +77,41 @@ def test_hsts_is_not_required_for_plain_http():
     ]
 
     assert "Missing Strict-Transport-Security" not in titles
+def test_findings_have_unique_ids_and_evidence():
+    request = httpx.Request(
+        "GET",
+        "https://example.com",
+    )
+
+    response = httpx.Response(
+        200,
+        request=request,
+        headers={},
+    )
+
+    findings = check_security_headers(
+        response
+    )
+
+    finding_ids = [
+        finding.finding_id
+        for finding in findings
+    ]
+
+    assert len(finding_ids) == len(
+        set(finding_ids)
+    )
+
+    for finding in findings:
+        assert finding.finding_id
+        assert finding.evidence
+
+
+
+
+
+
+
+
+
+    

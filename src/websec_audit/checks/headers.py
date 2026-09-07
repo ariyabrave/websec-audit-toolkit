@@ -5,6 +5,7 @@ from websec_audit.findings import Finding
 
 SECURITY_HEADERS = {
     "Content-Security-Policy": {
+        "id": "WEB-HEADER-001",
         "severity": "Medium",
         "description": (
             "Content-Security-Policy is not present. "
@@ -17,6 +18,7 @@ SECURITY_HEADERS = {
         ),
     },
     "X-Content-Type-Options": {
+        "id": "WEB-HEADER-002",
         "severity": "Low",
         "description": (
             "X-Content-Type-Options is not present. "
@@ -27,6 +29,7 @@ SECURITY_HEADERS = {
         ),
     },
     "Referrer-Policy": {
+        "id": "WEB-HEADER-003",
         "severity": "Low",
         "description": (
             "Referrer-Policy is not present. "
@@ -38,6 +41,7 @@ SECURITY_HEADERS = {
         ),
     },
     "Permissions-Policy": {
+        "id": "WEB-HEADER-004",
         "severity": "Informational",
         "description": (
             "Permissions-Policy is not present. "
@@ -59,15 +63,20 @@ def check_security_headers(
     Check an HTTP response for common security headers.
     """
 
-    findings = []
+    findings: list[Finding] = []
 
     for header_name, rule in SECURITY_HEADERS.items():
         if header_name not in response.headers:
             findings.append(
                 Finding(
+                    finding_id=rule["id"],
                     title=f"Missing {header_name}",
                     severity=rule["severity"],
                     description=rule["description"],
+                    evidence=(
+                        f"The HTTP response did not include the "
+                        f"{header_name} header."
+                    ),
                     recommendation=rule["recommendation"],
                 )
             )
@@ -78,11 +87,16 @@ def check_security_headers(
     ):
         findings.append(
             Finding(
+                finding_id="WEB-HEADER-005",
                 title="Missing Strict-Transport-Security",
                 severity="Low",
                 description=(
                     "The site is served over HTTPS but does not "
                     "send the Strict-Transport-Security header."
+                ),
+                evidence=(
+                    "The final response was delivered over HTTPS "
+                    "without a Strict-Transport-Security header."
                 ),
                 recommendation=(
                     "Consider enabling HSTS after confirming that "
