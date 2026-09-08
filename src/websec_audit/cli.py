@@ -1,9 +1,11 @@
+from pathlib import Path
 from urllib.parse import urlparse
 
 import typer
 
 from websec_audit.checks.headers import check_security_headers
 from websec_audit.http_client import FetchError, fetch_target
+from websec_audit.json_report import write_json_report
 from websec_audit.reporting import render_scan_result
 
 
@@ -63,6 +65,11 @@ def scan(
         ...,
         help="Authorized HTTP or HTTPS target to assess.",
     ),
+    json_output: Path | None = typer.Option(
+        None,
+        "--json",
+        help="Write scan results to a JSON file.",
+    ),
 ) -> None:
     """
     Run security checks against a target.
@@ -94,6 +101,18 @@ def scan(
         response=response,
         findings=findings,
     )
+
+    if json_output is not None:
+        write_json_report(
+            path=json_output,
+            target=normalized_target,
+            response=response,
+            findings=findings,
+        )
+
+        typer.echo(
+            f"JSON report written to: {json_output}"
+        )
 
 
 if __name__ == "__main__":
