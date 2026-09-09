@@ -7,6 +7,11 @@ from websec_audit.checks.headers import check_security_headers
 from websec_audit.http_client import FetchError, fetch_target
 from websec_audit.json_report import write_json_report
 from websec_audit.reporting import render_scan_result
+from websec_audit.tls import (
+    TLSInspectionError,
+    inspect_tls,
+)
+from websec_audit.tls_reporting import render_tls_info
 
 
 app = typer.Typer(
@@ -92,8 +97,29 @@ def scan(
             code=1
         )
 
+    tls_info = None
+    tls_error = None
+    tls_findings = []
+
+    try:
+        tls_info, tls_findings = inspect_tls(
+            str(response.url)
+        )
+
+    except TLSInspectionError as exc:
+        tls_error = str(exc)
+
     findings = check_security_headers(
         response
+    )
+
+    findings.extend(
+        tls_findings
+    )
+
+    render_tls_info(
+        info=tls_info,
+        error=tls_error,
     )
 
     render_scan_result(
@@ -108,6 +134,8 @@ def scan(
             target=normalized_target,
             response=response,
             findings=findings,
+            tls_info=tls_info,
+            tls_error=tls_error,
         )
 
         typer.echo(
