@@ -3,14 +3,10 @@ from urllib.parse import urlparse
 
 import typer
 
-from websec_audit.checks.headers import check_security_headers
-from websec_audit.http_client import FetchError, fetch_target
+from websec_audit.http_client import FetchError
 from websec_audit.json_report import write_json_report
 from websec_audit.reporting import render_scan_result
-from websec_audit.tls import (
-    TLSInspectionError,
-    inspect_tls,
-)
+from websec_audit.scanner import run_scan
 from websec_audit.tls_reporting import render_tls_info
 
 
@@ -31,7 +27,9 @@ def main() -> None:
     pass
 
 
-def normalize_target(target: str) -> str:
+def normalize_target(
+    target: str,
+) -> str:
     """
     Normalize and validate a target URL.
     """
@@ -85,7 +83,7 @@ def scan(
     )
 
     try:
-        response = fetch_target(
+        result = run_scan(
             normalized_target
         )
 
@@ -97,45 +95,25 @@ def scan(
             code=1
         )
 
-    tls_info = None
-    tls_error = None
-    tls_findings = []
-
-    try:
-        tls_info, tls_findings = inspect_tls(
-            str(response.url)
-        )
-
-    except TLSInspectionError as exc:
-        tls_error = str(exc)
-
-    findings = check_security_headers(
-        response
-    )
-
-    findings.extend(
-        tls_findings
-    )
-
     render_tls_info(
-        info=tls_info,
-        error=tls_error,
+        info=result.tls_info,
+        error=result.tls_error,
     )
 
     render_scan_result(
-        target=normalized_target,
-        response=response,
-        findings=findings,
+        target=result.target,
+        response=result.response,
+        findings=result.findings,
     )
 
     if json_output is not None:
         write_json_report(
             path=json_output,
-            target=normalized_target,
-            response=response,
-            findings=findings,
-            tls_info=tls_info,
-            tls_error=tls_error,
+            target=result.target,
+            response=result.response,
+            findings=result.findings,
+            tls_info=result.tls_info,
+            tls_error=result.tls_error,
         )
 
         typer.echo(
